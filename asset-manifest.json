@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/kissan-talk/static/css/main.9cdc2905.css",
+    "main.js": "/kissan-talk/static/js/main.785b5b2b.js",
+    "index.html": "/kissan-talk/index.html",
+    "main.9cdc2905.css.map": "/kissan-talk/static/css/main.9cdc2905.css.map",
+    "main.785b5b2b.js.map": "/kissan-talk/static/js/main.785b5b2b.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.9cdc2905.css",
+    "static/js/main.785b5b2b.js"
+  ]
+}

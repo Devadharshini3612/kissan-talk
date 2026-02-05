@@ -1,0 +1,35 @@
+# Node
+node_modules/
+**/node_modules/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Frontend build artifacts
+kisanTalk/frontend/build/
+**/build/
+
+# Backend uploads (audio files and generated data)
+kisantalk/backend/uploads/
+**/uploads/
+
+# Env files
+.env
+.env.local
+.env.*.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Misc
+coverage/
+dist/
+tmp/
+temp/
