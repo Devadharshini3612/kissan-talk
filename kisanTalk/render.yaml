@@ -1,8 +1,8 @@
-# Render deployment configuration
 services:
   - type: web
     name: kisantalk-backend
     env: node
+    rootDir: backend
     region: singapore
     plan: free
     buildCommand: npm install
@@ -11,6 +11,6 @@ services:
       - key: NODE_ENV
         value: production
       - key: PORT
-        value: 5000
+        value: 10000
       - key: OPENAI_API_KEY
         sync: false
