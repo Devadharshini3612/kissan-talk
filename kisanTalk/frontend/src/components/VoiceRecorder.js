@@ -1,13 +1,13 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { FiMic, FiStopCircle, FiPhone, FiPhoneOff, FiUser, FiGlobe } from 'react-icons/fi';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { FiMic, FiStopCircle, FiPhoneOff, FiUser } from 'react-icons/fi';
 import axios from 'axios';
 import { useLanguage } from '../LanguageContext';
 import { categorizeGrievance } from '../utils/categorization';
 
 const VoiceRecorder = ({ onGrievanceSubmitted }) => {
-  const { t, setLanguage } = useLanguage();
+  const { setLanguage } = useLanguage();
   
-  // Call States: 'DIALING' -> 'CONNECTED_LANGUAGE' -> 'CONNECTED_RECORDING' -> 'PROCESSING' -> 'COMPLETED'
+  // Call States: 'DIALING' -> 'CONNECTED_LANGUAGE' -> 'CONNECTED_RECORDING' -> 'WAITING_CONFIRMATION' -> 'PLAYING_RECORDING' -> 'PROCESSING' -> 'WAITING_FOR_ID' -> 'WAITING_END' -> 'COMPLETED'
   const [callState, setCallState] = useState('DIALING');
   
   const [isRecording, setIsRecording] = useState(false);
@@ -19,6 +19,7 @@ const VoiceRecorder = ({ onGrievanceSubmitted }) => {
   const [callTimer, setCallTimer] = useState(0);
   const [sttStatus, setSttStatus] = useState('');
   const [complaintId, setComplaintId] = useState('');
+  const [audioPlayer, setAudioPlayer] = useState(null);
   
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
@@ -28,12 +29,13 @@ const VoiceRecorder = ({ onGrievanceSubmitted }) => {
   const lastResultTimeRef = useRef(0);
   const voicesRef = useRef([]);
 
-  const languageOptions = [
+  // Language options - wrapped in useMemo to prevent re-renders
+  const languageOptions = useMemo(() => [
     { code: 'en', name: 'English', localName: 'English', key: '1' },
     { code: 'hi', name: 'Hindi', localName: 'हिन्दी', key: '2' },
     { code: 'pa', name: 'Punjabi', localName: 'ਪੰਜਾਬੀ', key: '3' },
     { code: 'ta', name: 'Tamil', localName: 'தமிழ்', key: '4' },
-  ];
+  ], []);
 
   // Start Call Timer
   useEffect(() => {
@@ -44,6 +46,147 @@ const VoiceRecorder = ({ onGrievanceSubmitted }) => {
     }
     return () => clearInterval(timerRef.current);
   }, [callState]);
+
+  const speak = (text) => {
+    window.speechSynthesis.cancel();
+    const msg = new SpeechSynthesisUtterance(text);
+    msg.rate = 0.9;
+    window.speechSynthesis.speak(msg);
+  };
+
+  useEffect(() => {
+    const loadVoices = () => {
+      voicesRef.current = window.speechSynthesis.getVoices();
+    };
+    loadVoices();
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+  }, []);
+
+  // Cleanup audio player when component unmounts or audioPlayer changes
+  useEffect(() => {
+    return () => {
+      if (audioPlayer) {
+        audioPlayer.pause();
+        audioPlayer.src = '';
+      }
+    };
+  }, [audioPlayer]);
+
+  const speakInLanguage = (langCode, text) => {
+    window.speechSynthesis.cancel();
+    const msg = new SpeechSynthesisUtterance(text);
+    msg.rate = 0.95;
+    msg.lang = langCode === 'ta' ? 'ta-IN' : langCode === 'hi' ? 'hi-IN' : langCode === 'pa' ? 'pa-IN' : 'en-US';
+    const voices = window.speechSynthesis.getVoices();
+    const voice = voices.find(v => v.lang && (v.lang.toLowerCase() === msg.lang.toLowerCase() || v.lang.toLowerCase().startsWith(msg.lang.split('-')[0].toLowerCase())));
+    if (voice) msg.voice = voice;
+    window.speechSynthesis.speak(msg);
+  };
+  
+  const speakComplaintId = (langCode, id) => {
+    const locale = langCode === 'ta' ? 'ta-IN' : langCode === 'hi' ? 'hi-IN' : langCode === 'pa' ? 'pa-IN' : 'en-US';
+    const voices = window.speechSynthesis.getVoices();
+    const voice = voices.find(v => v.lang && (v.lang.toLowerCase() === locale.toLowerCase() || v.lang.toLowerCase().startsWith(locale.split('-')[0].toLowerCase())));
+    const prefixMap = {
+      en: 'Your Complaint ID is',
+      hi: 'आपकी शिकायत आईडी है',
+      pa: 'ਤੁਹਾਡੀ ਸ਼ਿਕਾਇਤ ਆਈਡੀ ਹੈ',
+      ta: 'உங்கள் புகார் ஐடி'
+    };
+    const digitWords = {
+      en: ['zero','one','two','three','four','five','six','seven','eight','nine'],
+      hi: ['शून्य','एक','दो','तीन','चार','पांच','छह','सात','आठ','नौ'],
+      pa: ['ਸਿਫ਼ਰ','ਇੱਕ','ਦੋ','ਤਿੰਨ','ਚਾਰ','ਪੰਜ','ਛੇ','ਸੱਤ','ਅੱਠ','ਨੌਂ'],
+      ta: ['பூஜ்யம்','ஒன்று','இரண்டு','மூன்று','நான்கு','ஐந்து','ஆறு','ஏழு','எட்டு','ஒன்பது']
+    };
+    const prefixUtter = new SpeechSynthesisUtterance(prefixMap[langCode] || prefixMap.en);
+    prefixUtter.rate = 0.9;
+    prefixUtter.lang = locale;
+    if (voice) prefixUtter.voice = voice;
+    window.speechSynthesis.speak(prefixUtter);
+    const chars = String(id).split('');
+    chars.forEach(ch => {
+      const isDigit = /\d/.test(ch);
+      const token = isDigit ? (digitWords[langCode] || digitWords.en)[Number(ch)] : ch.toUpperCase();
+      const u = new SpeechSynthesisUtterance(token);
+      u.rate = 0.9;
+      u.lang = locale;
+      if (voice) u.voice = voice;
+      window.speechSynthesis.speak(u);
+    });
+  };
+
+  const playBeep = () => {
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(800, audioCtx.currentTime); // 800Hz beep
+    gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+    
+    oscillator.start();
+    oscillator.stop(audioCtx.currentTime + 0.3); // 300ms beep
+  };
+
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Start recording function
+  const startRecording = async (currentLang) => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      
+      // Use supported audio format - webm with opus codec is widely supported
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        audioChunksRef.current.push(event.data);
+      };
+
+      mediaRecorder.onstop = () => {
+        // Create blob with the same format as recorded
+        const blob = new Blob(audioChunksRef.current, { type: mediaRecorder.mimeType });
+        setAudioBlob(blob);
+        // We will process after transcript is done
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      startSpeechRecognition(currentLang);
+    } catch (error) {
+      alert("Microphone Error");
+    }
+  };
+
+  // Handle language selection - wrapped in useCallback to prevent re-renders
+  const handleLanguageSelect = useCallback((langCode) => {
+    setSelectedLanguage(langCode);
+    setLanguage(langCode);
+    setCallState('CONNECTED_RECORDING');
+    const promptText = langCode === 'ta' 
+      ? 'பீப் வந்ததும் தமிழில் பேசுங்கள்.' 
+      : langCode === 'hi' 
+      ? 'बीप के बाद अपनी शिकायत बोलें।' 
+      : langCode === 'pa' 
+      ? 'ਬੀਪ ਤੋਂ ਬਾਦ ਆਪਣੀ ਸ਼ਿਕਾਇਤ ਬੋਲੋ।' 
+      : 'After the beep, please speak your complaint.';
+    speakInLanguage(langCode, promptText);
+    
+    // Auto start recording after prompt (approx 3s)
+    setTimeout(() => {
+      playBeep(); // Play beep before recording
+      setTimeout(() => startRecording(langCode), 500); // Small delay after beep start
+    }, 4000);
+  }, [setLanguage]);
 
   // Initial Dialing Effect
   useEffect(() => {
@@ -71,100 +214,7 @@ const VoiceRecorder = ({ onGrievanceSubmitted }) => {
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [callState]);
-
-  const speak = (text) => {
-    window.speechSynthesis.cancel();
-    const msg = new SpeechSynthesisUtterance(text);
-    msg.rate = 0.9;
-    window.speechSynthesis.speak(msg);
-  };
-
-  useEffect(() => {
-    const loadVoices = () => {
-      voicesRef.current = window.speechSynthesis.getVoices();
-    };
-    loadVoices();
-    window.speechSynthesis.onvoiceschanged = loadVoices;
-  }, []);
-
-  const speakInLanguage = (langCode, text) => {
-    window.speechSynthesis.cancel();
-    const msg = new SpeechSynthesisUtterance(text);
-    msg.rate = 0.95;
-    msg.lang = langCode === 'ta' ? 'ta-IN' : langCode === 'hi' ? 'hi-IN' : langCode === 'pa' ? 'pa-IN' : 'en-US';
-    const voices = window.speechSynthesis.getVoices();
-    const voice = voices.find(v => v.lang && (v.lang.toLowerCase() === msg.lang.toLowerCase() || v.lang.toLowerCase().startsWith(msg.lang.split('-')[0].toLowerCase())));
-    if (voice) msg.voice = voice;
-    window.speechSynthesis.speak(msg);
-  };
-
-  const playBeep = () => {
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const oscillator = audioCtx.createOscillator();
-    const gainNode = audioCtx.createGain();
-
-    oscillator.connect(gainNode);
-    gainNode.connect(audioCtx.destination);
-
-    oscillator.type = 'sine';
-    oscillator.frequency.setValueAtTime(800, audioCtx.currentTime); // 800Hz beep
-    gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-    
-    oscillator.start();
-    oscillator.stop(audioCtx.currentTime + 0.3); // 300ms beep
-  };
-
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const handleLanguageSelect = (langCode) => {
-    setSelectedLanguage(langCode);
-    setLanguage(langCode);
-    setCallState('CONNECTED_RECORDING');
-    const promptText = langCode === 'ta' 
-      ? 'பீப் வந்ததும் தமிழில் பேசுங்கள்.' 
-      : langCode === 'hi' 
-      ? 'बीप के बाद अपनी शिकायत बोलें।' 
-      : langCode === 'pa' 
-      ? 'ਬੀਪ ਤੋਂ ਬਾਦ ਆਪਣੀ ਸ਼ਿਕਾਇਤ ਬੋਲੋ।' 
-      : 'After the beep, please speak your complaint.';
-    speakInLanguage(langCode, promptText);
-    
-    // Auto start recording after prompt (approx 3s)
-    setTimeout(() => {
-      playBeep(); // Play beep before recording
-      setTimeout(() => startRecording(langCode), 500); // Small delay after beep start
-    }, 4000);
-  };
-
-  const startRecording = async (currentLang) => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
-
-      mediaRecorder.ondataavailable = (event) => {
-        audioChunksRef.current.push(event.data);
-      };
-
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
-        setAudioBlob(blob);
-        // We will process after transcript is done
-      };
-
-      mediaRecorder.start();
-      setIsRecording(true);
-      startSpeechRecognition(currentLang);
-    } catch (error) {
-      alert("Microphone Error");
-    }
-  };
+  }, [callState, handleLanguageSelect, languageOptions]);
 
   const startSpeechRecognition = (currentLang) => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -181,10 +231,8 @@ const VoiceRecorder = ({ onGrievanceSubmitted }) => {
     
     // Use the passed language or fallback to state
     const langToUse = currentLang || selectedLanguage;
-    
-    recognition.lang = langToUse === 'hi' ? 'hi-IN' : 
-                       langToUse === 'pa' ? 'pa-IN' : 
-                       langToUse === 'ta' ? 'ta-IN' : 'en-US';
+    const langMap = { en: 'en-US', hi: 'hi-IN', pa: 'pa-IN', ta: 'ta-IN' };
+    recognition.lang = langMap[langToUse] || 'en-US';
 
     let finalTranscript = '';
 
@@ -266,15 +314,20 @@ const VoiceRecorder = ({ onGrievanceSubmitted }) => {
       sttRestartTimerRef.current = null;
     }
     setIsRecording(false);
-    setCallState('PROCESSING');
+    setCallState('WAITING_CONFIRMATION');
     
-    // Auto-submit after a brief pause
-    setTimeout(() => {
-      submitGrievance();
-    }, 1500);
+    // Ask user to confirm recording
+    const promptText = selectedLanguage === 'ta' 
+      ? 'வைக்கும் பின் உங்கள் புகாரை கேட்க 1 ஐ அழுத்தவும்.' 
+      : selectedLanguage === 'hi' 
+      ? 'कृपया 1 दबाकर अपनी शिकायत सुनें।' 
+      : selectedLanguage === 'pa' 
+      ? 'ਕਿਰਪਾ ਕਰਕੇ 1 ਦਬਾਓ ਅਤੇ ਆਪਣੀ ਸ਼ਿਕਾਇਤ ਸੁਣੋ।' 
+      : 'Please press 1 to hear your recorded complaint.';
+    speakInLanguage(selectedLanguage, promptText);
   };
 
-  const submitGrievance = async () => {
+  const submitGrievance = useCallback(async () => {
     const finalDescription = description || transcript || "";
     
     const formData = new FormData();
@@ -309,25 +362,131 @@ const VoiceRecorder = ({ onGrievanceSubmitted }) => {
       speak("Sorry, there was an error registering your complaint.");
       setCallState('COMPLETED');
     }
-  };
+  }, [description, transcript, category, selectedLanguage, audioBlob]);
   
-  // Handle "Press any key for ID"
+  // Function to play recorded audio
+  const playRecording = useCallback(async () => {
+    if (audioBlob) {
+      // Stop any ongoing speech synthesis to avoid audio conflicts
+      window.speechSynthesis.cancel();
+      
+      try {
+        // Create a new AudioContext and resume it (needed for modern browsers)
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        await audioCtx.resume();
+        
+        const player = new Audio(URL.createObjectURL(audioBlob));
+        setAudioPlayer(player);
+        
+        player.onended = () => {
+          // After playback completes, move to processing
+          setCallState('PROCESSING');
+          // Auto-submit after a brief pause
+          setTimeout(() => {
+            submitGrievance();
+          }, 1500);
+          // Clean up the object URL to prevent memory leaks
+          URL.revokeObjectURL(player.src);
+        };
+        
+        player.onerror = (error) => {
+          console.error('Audio playback error:', error);
+          setCallState('PROCESSING');
+          setTimeout(() => submitGrievance(), 1500);
+          // Clean up the object URL
+          URL.revokeObjectURL(player.src);
+        };
+        
+        // Set audio volume to maximum for better hearing
+        player.volume = 1.0;
+        
+        // Play the audio and wait for it to start
+        await player.play();
+        console.log('Audio playback started successfully');
+        
+      } catch (error) {
+        console.error('Error playing audio:', error);
+        // If playback fails, try a different approach
+        try {
+          // Create a new audio element with direct source
+          const audioElement = document.createElement('audio');
+          audioElement.src = URL.createObjectURL(audioBlob);
+          audioElement.volume = 1.0;
+          audioElement.onended = () => {
+            setCallState('PROCESSING');
+            setTimeout(() => submitGrievance(), 1500);
+            URL.revokeObjectURL(audioElement.src);
+          };
+          
+          // Directly call play() without await
+          audioElement.play();
+          setAudioPlayer(audioElement);
+        } catch (fallbackError) {
+          console.error('Fallback audio playback failed:', fallbackError);
+          // If all playback methods fail, just proceed with submission
+          setCallState('PROCESSING');
+          setTimeout(() => submitGrievance(), 1500);
+        }
+      }
+    } else {
+      // If no audio, proceed to processing
+      setCallState('PROCESSING');
+      setTimeout(() => submitGrievance(), 1500);
+    }
+  }, [audioBlob, submitGrievance]);
+
+  // Handle key presses for different call states
   useEffect(() => {
-    const handleAnyKey = (e) => {
-      if (callState === 'WAITING_FOR_ID') {
-        speak(`Your Complaint ID is ${complaintId.split('').join(' ')}`); // Read digits individually
-        setCallState('COMPLETED');
-        setTimeout(() => {
-           onGrievanceSubmitted();
-        }, 8000); // Give time to read ID
+    const handleKeyPress = (e) => {
+      // Handle confirmation state (press 1 to hear recording, any other key to continue without playback)
+      if (callState === 'WAITING_CONFIRMATION') {
+        if (e.key === '1') {
+          setCallState('PLAYING_RECORDING');
+          playRecording();
+        } else {
+          // If any other key is pressed, skip playback and proceed to processing
+          setCallState('PROCESSING');
+          setTimeout(() => submitGrievance(), 1500);
+        }
+      }
+      // Handle ID state (press any key to hear ID)
+      else if (callState === 'WAITING_FOR_ID') {
+        speakComplaintId(selectedLanguage, complaintId);
+        setCallState('WAITING_END');
+        const endPrompt = selectedLanguage === 'ta' 
+          ? 'காலை கடைப்பிடிக்க ஏதேனும் ஒரு விசையையும் அழுத்தவும். மேலும் அழைப்பதற்கு 1 ஐ அழுத்தவும். Tamil.' 
+          : selectedLanguage === 'hi' 
+          ? 'कॉल समाप्त करने के लिए कोई भी कुंजी दबाएं। और बात करने के लिए 1 दबाएं। Hindi.' 
+          : selectedLanguage === 'pa' 
+          ? 'ਕਾਲ ਖਤਮ ਕਰਨ ਲਈ ਕੋਈ ਵੀ ਬਟਨ ਦਬਾਓ। ਹੋਰ ਗੱਲ ਕਰਨ ਲਈ 1 ਦਬਾਓ। Punjabi.' 
+          : 'Press any key to end the call. Press 1 to continue the call. English.';
+        const approxDelay = 2500 + String(complaintId).length * 700;
+        setTimeout(() => speakInLanguage(selectedLanguage, endPrompt), approxDelay);
+      }
+      // Handle end state (press any key to end, press 1 to continue)
+      else if (callState === 'WAITING_END') {
+        if (e.key === '1') {
+          // Restart the call
+          setCallState('DIALING');
+          setCallTimer(0);
+          setTranscript('');
+          setDescription('');
+          setCategory('');
+          setComplaintId('');
+          setAudioBlob(null);
+        } else {
+          // End the call
+          setCallState('COMPLETED');
+          setTimeout(() => {
+            onGrievanceSubmitted();
+          }, 2000);
+        }
       }
     };
 
-    if (callState === 'WAITING_FOR_ID') {
-      window.addEventListener('keydown', handleAnyKey);
-    }
-    return () => window.removeEventListener('keydown', handleAnyKey);
-  }, [callState, complaintId, onGrievanceSubmitted]);
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [callState, complaintId, selectedLanguage, onGrievanceSubmitted, playRecording, submitGrievance]);
 
   // --- Render Call UI ---
 
@@ -443,6 +602,31 @@ const VoiceRecorder = ({ onGrievanceSubmitted }) => {
           </div>
         )}
 
+        {callState === 'WAITING_CONFIRMATION' && (
+          <div style={{ textAlign: 'center', animation: 'pulse 2s infinite' }}>
+            <div style={{ marginBottom: '20px' }}>
+              <div style={{ width: '80px', height: '80px', borderRadius: '50%', backgroundColor: '#4299e1', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>
+                <FiUser size={40} color="white" />
+              </div>
+            </div>
+            <h3 style={{ marginBottom: '10px', color: '#4299e1' }}>Recording Complete!</h3>
+            <p style={{ fontSize: '18px', marginBottom: '15px' }}>Press 1 to hear your recorded complaint</p>
+            <p style={{ fontSize: '14px', color: '#a0aec0' }}>After hearing, your complaint will be registered automatically</p>
+          </div>
+        )}
+
+        {callState === 'PLAYING_RECORDING' && (
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ marginBottom: '20px', animation: 'pulse 1s infinite' }}>
+              <div style={{ width: '80px', height: '80px', borderRadius: '50%', backgroundColor: '#48bb78', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>
+                <FiMic size={40} color="white" />
+              </div>
+            </div>
+            <h3 style={{ marginBottom: '10px', color: '#48bb78' }}>Playing Recording...</h3>
+            <p style={{ fontSize: '16px', color: '#a0aec0' }}>Please listen to your recorded complaint</p>
+          </div>
+        )}
+
         {callState === 'PROCESSING' && (
            <div style={{ textAlign: 'center' }}>
              <div className="loader" style={{ margin: '0 auto 20px' }}></div>
@@ -456,6 +640,14 @@ const VoiceRecorder = ({ onGrievanceSubmitted }) => {
             <p style={{ fontSize: '20px', color: 'white', fontWeight: 'bold' }}>
               Press ANY Number/Key to hear your Complaint ID
             </p>
+          </div>
+        )}
+
+        {callState === 'WAITING_END' && (
+          <div style={{ textAlign: 'center', animation: 'pulse 2s infinite' }}>
+            <h3 style={{ marginBottom: '10px', color: '#48bb78' }}>Call Options</h3>
+            <p style={{ fontSize: '18px', marginBottom: '15px' }}>Press 1 to continue the call</p>
+            <p style={{ fontSize: '16px', color: '#a0aec0' }}>Press any other key to end the call</p>
           </div>
         )}
 

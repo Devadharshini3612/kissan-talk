@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import { FiMic, FiStopCircle, FiCheck, FiSend, FiX, FiCopy, FiPlay, FiRefreshCw, FiSearch } from 'react-icons/fi';
 import { useLanguage } from '../LanguageContext';
+import { categorizeGrievance } from '../utils/categorization';
 
 const GrievanceForm = ({ onCancel, onSuccess }) => {
   const { t, language } = useLanguage();
@@ -47,7 +48,18 @@ const GrievanceForm = ({ onCancel, onSuccess }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    let updatedForm = { ...formData, [name]: value };
+    
+    // Automatically categorize based on description
+    if (name === 'description' || name === 'title') {
+      const fullText = (updatedForm.title + ' ' + updatedForm.description).trim();
+      if (fullText) {
+        const autoCategory = categorizeGrievance(fullText);
+        updatedForm.category = autoCategory;
+      }
+    }
+    
+    setFormData(updatedForm);
   };
 
   const startSpeechRecognition = () => {
@@ -78,7 +90,16 @@ const GrievanceForm = ({ onCancel, onSuccess }) => {
         const finalCombined = (prev + finalTranscriptChunk).trim();
         setInterimText(interimTranscript);
         const displayText = (finalCombined + ' ' + interimTranscript).trim();
-        setFormData(prevData => ({ ...prevData, description: displayText }));
+        
+        // Auto-categorize based on title and description
+        const fullTextWithTitle = (formData.title + ' ' + displayText).trim();
+        const autoCategory = categorizeGrievance(fullTextWithTitle);
+        
+        setFormData(prevData => ({
+          ...prevData, 
+          description: displayText,
+          category: autoCategory
+        }));
         return finalCombined;
       });
     };
@@ -445,25 +466,27 @@ const GrievanceForm = ({ onCancel, onSuccess }) => {
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
             <div>
-              <label style={{ display: 'block', marginBottom: '5px', color: '#4a5568', fontWeight: 'bold' }}>{t.farmerName}</label>
+              <label htmlFor="farmerName" style={{ display: 'block', marginBottom: '5px', color: '#4a5568', fontWeight: 'bold' }}>{t.farmerName || 'Name'}</label>
               <input 
                 type="text" 
                 name="farmerName" 
                 value={formData.farmerName} 
                 onChange={handleChange} 
                 required 
+                id="farmerName"
                 style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e0' }}
                 placeholder={t.farmerNamePlaceholder}
               />
             </div>
             <div>
-              <label style={{ display: 'block', marginBottom: '5px', color: '#4a5568', fontWeight: 'bold' }}>{t.phone}</label>
+              <label htmlFor="phone" style={{ display: 'block', marginBottom: '5px', color: '#4a5568', fontWeight: 'bold' }}>{t.phone || 'Phone Number'}</label>
               <input 
                 type="tel" 
                 name="phone" 
                 value={formData.phone} 
                 onChange={handleChange} 
                 required 
+                id="phone"
                 style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e0' }}
                 placeholder={t.phonePlaceholder}
               />
@@ -472,25 +495,27 @@ const GrievanceForm = ({ onCancel, onSuccess }) => {
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
             <div>
-              <label style={{ display: 'block', marginBottom: '5px', color: '#4a5568', fontWeight: 'bold' }}>{t.village}</label>
+              <label htmlFor="village" style={{ display: 'block', marginBottom: '5px', color: '#4a5568', fontWeight: 'bold' }}>{t.village || 'Village'}</label>
               <input 
                 type="text" 
                 name="village" 
                 value={formData.village} 
                 onChange={handleChange} 
                 required 
+                id="village"
                 style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e0' }}
                 placeholder={t.villagePlaceholder}
               />
             </div>
             <div>
-              <label style={{ display: 'block', marginBottom: '5px', color: '#4a5568', fontWeight: 'bold' }}>{t.district}</label>
+              <label htmlFor="district" style={{ display: 'block', marginBottom: '5px', color: '#4a5568', fontWeight: 'bold' }}>{t.district || 'District'}</label>
               <input 
                 type="text" 
                 name="district" 
                 value={formData.district} 
                 onChange={handleChange} 
                 required 
+                id="district"
                 style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e0' }}
                 placeholder={t.districtPlaceholder}
               />
@@ -511,11 +536,12 @@ const GrievanceForm = ({ onCancel, onSuccess }) => {
           </h3>
 
           <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', marginBottom: '5px', color: '#4a5568', fontWeight: 'bold' }}>{t.category}</label>
+            <label htmlFor="category" style={{ display: 'block', marginBottom: '5px', color: '#4a5568', fontWeight: 'bold' }}>{t.category || 'Category'}</label>
           <select 
             name="category" 
             value={formData.category} 
             onChange={handleChange} 
+            id="category"
             style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e0' }}
           >
             <option value="Other">{t.selectCategory}</option>
@@ -530,13 +556,14 @@ const GrievanceForm = ({ onCancel, onSuccess }) => {
         </div>
 
         <div style={{ marginBottom: '20px' }}>
-          <label style={{ display: 'block', marginBottom: '5px', color: '#4a5568', fontWeight: 'bold' }}>{t.title}</label>
+          <label htmlFor="title" style={{ display: 'block', marginBottom: '5px', color: '#4a5568', fontWeight: 'bold' }}>{t.title || 'Title'}</label>
           <input 
             type="text" 
             name="title" 
             value={formData.title} 
             onChange={handleChange} 
             required 
+            id="title"
             style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e0' }}
             placeholder={t.titlePlaceholder}
           />
@@ -619,12 +646,13 @@ const GrievanceForm = ({ onCancel, onSuccess }) => {
         </div>
 
         <div style={{ marginBottom: '20px' }}>
-          <label style={{ display: 'block', marginBottom: '5px', color: '#4a5568', fontWeight: 'bold' }}>{t.description}</label>
+          <label htmlFor="description" style={{ display: 'block', marginBottom: '5px', color: '#4a5568', fontWeight: 'bold' }}>{t.description || 'Description'}</label>
           <textarea 
             name="description" 
             value={formData.description} 
             onChange={handleChange} 
             rows="4" 
+            id="description"
             style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e0', resize: 'vertical' }}
             placeholder={t.descriptionPlaceholder}
           />

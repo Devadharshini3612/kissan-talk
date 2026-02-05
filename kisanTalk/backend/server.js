@@ -78,12 +78,42 @@ const upload = multer({ storage });
 
 // Sector keywords and admin routing
 const sectorKeywords = {
-  'Crop Disease': ['pest', 'worm', 'fungus', 'disease', 'blight', 'rot', 'leaf', 'insect', 'virus'],
-  'Irrigation Issue': ['water', 'canal', 'dry', 'irrigation', 'pump', 'borewell', 'river', 'drought'],
-  'Subsidy/Scheme': ['money', 'loan', 'bank', 'scheme', 'subsidy', 'installment', 'payment', 'fund', 'credit'],
-  'Seeds/Fertilizers': ['seed', 'fertilizer', 'urea', 'dap', 'sowing', 'manure', 'nutrient'],
-  'Equipment Issue': ['tractor', 'machine', 'equipment', 'tool', 'repair', 'plough'],
-  'Market Access': ['market', 'price', 'sell', 'mandi', 'buyer', 'rate', 'transport']
+  'Crop Disease': [
+    'pest','worm','fungus','disease','blight','rot','leaf','insect','virus',
+    'कीड़ा','किट','रोग','बिमारी','फफूंदी','कीट','संक्रमण','वायरस','पत्ता',
+    'ਕੀੜਾ','ਬਿਮਾਰੀ','ਫਫੂੰਦੀ','ਕਿਰਮ','ਕੀਟ','ਵਾਇਰਸ',
+    'பூச்சி','நோய்','பூஞ்சை','விஷாணு','இலை','கிருமி'
+  ],
+  'Irrigation Issue': [
+    'water','canal','dry','irrigation','pump','borewell','river','drought',
+    'पानी','नहर','सूखा','सिंचाई','पम्प','कुआँ','नदी',
+    'ਪਾਣੀ','ਨਹਿਰ','ਸੁੱਕਾ','ਸਿੰਚਾਈ','ਪੰਪ','ਬੋਰਵੈੱਲ','ਦਰੀਆ',
+    'தண்ணீர்','கால்வாய்','வறட்டு','நீர்ப்பாசனம்','பம்ப்','கிணறு','நதி','வறட்சி'
+  ],
+  'Subsidy/Scheme': [
+    'money','loan','bank','scheme','subsidy','installment','payment','fund','credit','account',
+    'पैसा','ऋण','बैंक','योजना','सब्सिडी','किस्त','भुगतान','फंड','क्रेडिट','खाता',
+    'ਪੈਸਾ','ਕਰਜ਼ਾ','ਬੈਂਕ','ਯੋਜਨਾ','ਸਬਸਿਡੀ','ਕਿਸ਼ਤ','ਭੁਗਤਾਨ','ਫੰਡ',
+    'பணம்','கடன்','வங்கி','திட்டம்','உதவித்தொகை','கட்டணம்','நிதி','கடன்'
+  ],
+  'Seeds/Fertilizers': [
+    'seed','fertilizer','urea','dap','sowing','manure','nutrient','npk',
+    'बीज','खाद','बुवाई','उर्वरक','एनपीके',
+    'ਬੀਜ','ਖਾਦ','ਬੁਵਾਈ',
+    'விதை','உரம்','விதைப்பு','யூரியா','என்என்பிகே'
+  ],
+  'Equipment Issue': [
+    'tractor','machine','equipment','tool','repair','plough','tiller',
+    'ट्रैक्टर','मशीन','उपकरण','मरम्मत','खराब','हल','टिल्लर',
+    'ਟ੍ਰੈਕਟਰ','ਮਸ਼ੀਨ','ਉਪਕਰਣ','ਮੁਰੰਮਤ','ਖਰਾਬ',
+    'டிராக்டர்','இயந்திரம்','கருவி','பழுது'
+  ],
+  'Market Access': [
+    'market','price','sell','mandi','buyer','rate','transport','storage','godown','msp','procurement',
+    'मंडी','भाव','कीमत','बेचना','दर','खरीदार','व्यापारी','परिवहन','भंडारण','एमएसपी','खरीद',
+    'ਮੰਡੀ','ਭਾਅ','ਕੀਮਤ','ਵੇਚਣਾ','ਰੇਟ','ਖਰੀਦਦਾਰ','ਵਪਾਰੀ','ਟ੍ਰਾਂਸਪੋਰਟ','ਸਟੋਰੇਜ',
+    'சந்தை','விலை','விற்பனை','விகிதம்','கொள்முதல்','வர்த்தகர்','போக்குவரத்து','கிடங்கு','எம்எஸ்பி'
+  ]
 };
 
 const adminRouting = {
