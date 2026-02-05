@@ -1,58 +1,166 @@
+// Enhanced categorization with multilingual keyword support for all 10 languages
 export const categorizeGrievance = (text) => {
-  if (!text) return '';
+  if (!text) return 'Other';
 
   const lowerText = text.toLowerCase();
 
-  const categories = {
+  // Extended keyword mapping for all 10 Indian languages
+  const categoryKeywords = {
     'Crop Disease': [
-      'disease','pest','insect','worm','fungus','blight','rot','spot','wilt','attack','virus','bacteria','infection',
-      'rog','kida','kit','bimari','ille','fungi','sundi',
-      'कीड़ा','रोग','बिमारी','फफूंदी','कीट','वायरस',
-      'ਕੀੜਾ','ਬਿਮਾਰੀ','ਫਫੂੰਦੀ','ਕੀਟ',
-      'பூச்சி','நோய்','பூஞ்சை','விஷாணு'
+      // English
+      'pest', 'worm', 'fungus', 'disease', 'blight', 'rot', 'leaf', 'insect', 'virus', 'infection',
+      // Hindi
+      'कीड़ा', 'किट', 'रोग', 'बिमारी', 'फफूंदी', 'कीट', 'संक्रमण', 'वायरस', 'पत्ता',
+      // Punjabi
+      'ਕੀੜਾ', 'ਬਿਮਾਰੀ', 'ਫਫੂੰਦੀ', 'ਕਿਰਮ', 'ਕੀਟ', 'ਵਾਇਰਸ',
+      // Tamil
+      'பூச்சி', 'நோய்', 'பூஞ்சை', 'விஷாணு', 'இலை', 'கிருமி',
+      // Telugu
+      'పురుగు', 'వ్యాధి', 'శిలీంధ్రం', 'వైరస్', 'ఆకు',
+      // Bengali
+      'পোকা', 'রোগ', 'ছত্রাক', 'ভাইরাস', 'পাতা',
+      // Marathi
+      'किडा', 'रोग', 'बुरशी', 'व्हायरस', 'पान',
+      // Gujarati
+      'જંતુ', 'રોગ', 'ફૂગ', 'વાયરસ', 'પાન',
+      // Kannada
+      'ಕೀಟ', 'ರೋಗ', 'ಶಿಲೀಂಧ್ರ', 'ವೈರಸ್', 'ಎಲೆ',
+      // Malayalam
+      'പുഴു', 'രോഗം', 'കുമിൾ', 'വൈറസ്', 'ഇല'
     ],
+
     'Irrigation Issue': [
-      'water','irrigation','canal','tube well','pump','borewell','drought','dry','rain','pipe','leak','flow','motor',
-      'pani','sinchai','nehar','nalkoop','sukha','barish',
-      'पानी','नहर','सिंचाई','सूखा',
-      'ਪਾਣੀ','ਨਹਿਰ','ਸਿੰਚਾਈ',
-      'தண்ணீர்','கால்வாய்','நீர்ப்பாசனம்','வறட்சி'
+      // English
+      'water', 'canal', 'dry', 'irrigation', 'pump', 'borewell', 'river', 'drought', 'well',
+      // Hindi
+      'पानी', 'नहर', 'सूखा', 'सिंचाई', 'पम्प', 'कुआँ', 'नदी', 'बोरवेल',
+      // Punjabi
+      'ਪਾਣੀ', 'ਨਹਿਰ', 'ਸੁੱਕਾ', 'ਸਿੰਚਾਈ', 'ਪੰਪ', 'ਬੋਰਵੈੱਲ', 'ਦਰੀਆ',
+      // Tamil
+      'தண்ணீர்', 'கால்வாய்', 'வறட்டு', 'நீர்ப்பாசனம்', 'பம்ப்', 'கிணறு', 'நதி', 'வறட்சி',
+      // Telugu
+      'నీరు', 'కాలువ', 'ఎండ', 'నీటిపారుదల', 'పంపు', 'బావి', 'నది',
+      // Bengali
+      'জল', 'খাল', 'শুকনো', 'সেচ', 'পাম্প', 'কূপ', 'নদী',
+      // Marathi
+      'पाणी', 'कालवा', 'कोरडा', 'सिंचन', 'पंप', 'विहीर', 'नदी',
+      // Gujarati
+      'પાણી', 'નહેર', 'સૂકું', 'સિંચાઈ', 'પંપ', 'કૂવો', 'નદી',
+      // Kannada
+      'ನೀರು', 'ಕಾಲುವೆ', 'ಒಣ', 'ನೀರಾವರಿ', 'ಪಂಪ್', 'ಬಾವಿ', 'ನದಿ',
+      // Malayalam
+      'വെള്ളം', 'കനാൽ', 'വരണ്ട', 'ജലസേചനം', 'പമ്പ്', 'കിണർ', 'നദി'
     ],
+
     'Subsidy/Scheme': [
-      'subsidy','scheme','pm kisan','loan','bank','money','fund','grant','insurance','bima','yojana','account','kcc','credit card',
-      'paisa','dhan','rakam','karz',
-      'पैसा','ऋण','बैंक','योजना','सब्सिडी','किस्त','भुगतान','खाता',
-      'ਪੈਸਾ','ਕਰਜ਼ਾ','ਬੈਂਕ','ਯੋਜਨਾ','ਸਬਸਿਡੀ','ਕਿਸ਼ਤ',
-      'பணம்','கடன்','வங்கி','திட்டம்','உதவித்தொகை'
+      // English
+      'money', 'loan', 'bank', 'scheme', 'subsidy', 'installment', 'payment', 'fund', 'credit', 'account', 'pm-kisan',
+      // Hindi
+      'पैसा', 'ऋण', 'बैंक', 'योजना', 'सब्सिडी', 'किस्त', 'भुगतान', 'फंड', 'क्रेडिट', 'खाता',
+      // Punjabi
+      'ਪੈਸਾ', 'ਕਰਜ਼ਾ', 'ਬੈਂਕ', 'ਯੋਜਨਾ', 'ਸਬਸਿਡੀ', 'ਕਿਸ਼ਤ', 'ਭੁਗਤਾਨ', 'ਫੰਡ',
+      // Tamil
+      'பணம்', 'கடன்', 'வங்கி', 'திட்டம்', 'உதவித்தொகை', 'கட்டணம்', 'நிதி', 'கடன்',
+      // Telugu
+      'డబ్బు', 'రుణం', 'బ్యాంకు', 'పథకం', 'సబ్సిడీ', 'వాయిదా', 'చెల్లింపు',
+      // Bengali
+      'টাকা', 'ঋণ', 'ব্যাংক', 'প্রকল্প', 'ভর্তুকি', 'কিস্তি', 'পেমেন্ট',
+      // Marathi
+      'पैसा', 'कर्ज', 'बँक', 'योजना', 'सबसिडी', 'हप्ता', 'पेमेंट',
+      // Gujarati
+      'પૈસા', 'લોન', 'બેંક', 'યોજના', 'સબસિડી', 'હપ્તો', 'ચુકવણી',
+      // Kannada
+      'ಹಣ', 'ಸಾಲ', 'ಬ್ಯಾಂಕ್', 'ಯೋಜನೆ', 'ಸಬ್ಸಿಡಿ', 'ಕಂತು', 'ಪಾವತಿ',
+      // Malayalam
+      'പണം', 'വായ്പ', 'ബാങ്ക്', 'പദ്ധതി', 'സബ്സിഡി', 'ഗഡു', 'പേയ്മെന്റ്'
     ],
+
     'Seeds/Fertilizers': [
-      'seed','fertilizer','urea','dap','manure','sowing','planting','variety','hybrid','quality','shortage','npk',
-      'beej','khad','buwai','fasal',
-      'बीज','खाद','बुवाई','उर्वरक',
-      'ਬੀਜ','ਖਾਦ','ਬੁਵਾਈ',
-      'விதை','உரம்','விதைப்பு'
+      // English
+      'seed', 'fertilizer', 'urea', 'dap', 'sowing', 'manure', 'nutrient', 'npk', 'compost',
+      // Hindi
+      'बीज', 'खाद', 'बुवाई', 'उर्वरक', 'एनपीके', 'यूरिया',
+      // Punjabi
+      'ਬੀਜ', 'ਖਾਦ', 'ਬੁਵਾਈ', 'ਯੂਰੀਆ',
+      // Tamil
+      'விதை', 'உரம்', 'விதைப்பு', 'யூரியா', 'என்பிகே',
+      // Telugu
+      'విత్తనం', 'ఎరువు', 'విత్తడం', 'యూరియా',
+      // Bengali
+      'বীজ', 'সার', 'বপন', 'ইউরিয়া',
+      // Marathi
+      'बियाणे', 'खत', 'पेरणी', 'युरिया',
+      // Gujarati
+      'બીજ', 'ખાતર', 'વાવણી', 'યુરિયા',
+      // Kannada
+      'ಬೀಜ', 'ಗೊಬ್ಬರ', 'ಬಿತ್ತನೆ', 'ಯೂರಿಯಾ',
+      // Malayalam
+      'വിത്ത്', 'വളം', 'വിതയ്ക്കൽ', 'യൂറിയ'
     ],
+
     'Equipment Issue': [
-      'tractor','machine','tool','equipment','harvester','thresher','repair','breakdown','mechanic','plow','tiller',
-      'yantra','aujar','kharab',
-      'ट्रैक्टर','मशीन','उपकरण','मरम्मत','खराब',
-      'ਟ੍ਰੈਕਟਰ','ਮਸ਼ੀਨ','ਉਪਕਰਣ','ਮੁਰੰਮਤ','ਖਰਾਬ',
-      'டிராக்டர்','இயந்திரம்','கருவி','பழுது'
+      // English
+      'tractor', 'machine', 'equipment', 'tool', 'repair', 'plough', 'tiller', 'broken', 'damaged',
+      // Hindi
+      'ट्रैक्टर', 'मशीन', 'उपकरण', 'मरम्मत', 'खराब', 'हल', 'टिल्लर',
+      // Punjabi
+      'ਟ੍ਰੈਕਟਰ', 'ਮਸ਼ੀਨ', 'ਉਪਕਰਣ', 'ਮੁਰੰਮਤ', 'ਖਰਾਬ',
+      // Tamil
+      'டிராக்டர்', 'இயந்திரம்', 'கருவி', 'பழுது', 'உடைந்த',
+      // Telugu
+      'ట్రాక్టర్', 'యంత్రం', 'పరికరం', 'మరమ్మత్తు', 'పాడైన',
+      // Bengali
+      'ট্রাক্টর', 'যন্ত্র', 'সরঞ্জাম', 'মেরামত', 'ভাঙা',
+      // Marathi
+      'ट्रॅक्टर', 'यंत्र', 'उपकरण', 'दुरुस्ती', 'तुटलेले',
+      // Gujarati
+      'ટ્રેક્ટર', 'મશીન', 'સાધન', 'સમારકામ', 'તૂટેલું',
+      // Kannada
+      'ಟ್ರಾಕ್ಟರ್', 'ಯಂತ್ರ', 'ಸಾಧನ', 'ದುರಸ್ತಿ', 'ಮುರಿದ',
+      // Malayalam
+      'ട്രാക്ടർ', 'യന്ത്രം', 'ഉപകരണം', 'അറ്റകുറ്റപ്പണി', 'തകർന്ന'
     ],
+
     'Market Access': [
-      'market','mandi','price','rate','sell','selling','transport','storage','godown','msp','buyer','trader','procurement',
-      'bhav','daam','bechna','bikri','vyapari',
-      'मंडी','भाव','कीमत','बेचना','दर','खरीदार','व्यापारी',
-      'ਮੰਡੀ','ਭਾਅ','ਕੀਮਤ','ਵੇਚਣਾ','ਰੇਟ','ਵਪਾਰੀ',
-      'சந்தை','விலை','விற்பனை','விகிதம்','வர்த்தகர்','போக்குவரத்து'
+      // English
+      'market', 'price', 'sell', 'mandi', 'buyer', 'rate', 'transport', 'storage', 'godown', 'msp', 'procurement',
+      // Hindi
+      'मंडी', 'भाव', 'कीमत', 'बेचना', 'दर', 'खरीदार', 'व्यापारी', 'परिवहन', 'भंडारण', 'एमएसपी', 'खरीद',
+      // Punjabi
+      'ਮੰਡੀ', 'ਭਾਅ', 'ਕੀਮਤ', 'ਵੇਚਣਾ', 'ਰੇਟ', 'ਖਰੀਦਦਾਰ', 'ਵਪਾਰੀ', 'ਟ੍ਰਾਂਸਪੋਰਟ', 'ਸਟੋਰੇਜ',
+      // Tamil
+      'சந்தை', 'விலை', 'விற்பனை', 'விகிதம்', 'கொள்முதல்', 'வர்த்தகர்', 'போக்குவரத்து', 'கிடங்கு', 'எம்எஸ்பி',
+      // Telugu
+      'మార్కెట్', 'ధర', 'అమ్మకం', 'రేటు', 'కొనుగోలుదారు', 'రవాణా', 'నిల్వ',
+      // Bengali
+      'বাজার', 'দাম', 'বিক্রয়', 'হার', 'ক্রেতা', 'পরিবহন', 'গুদাম',
+      // Marathi
+      'बाजार', 'किंमत', 'विक्री', 'दर', 'खरेदीदार', 'वाहतूक', 'गोदाम',
+      // Gujarati
+      'બજાર', 'ભાવ', 'વેચાણ', 'દર', 'ખરીદદાર', 'પરિવહન', 'ગોડાઉન',
+      // Kannada
+      'ಮಾರುಕಟ್ಟೆ', 'ಬೆಲೆ', 'ಮಾರಾಟ', 'ದರ', 'ಖರೀದಿದಾರ', 'ಸಾರಿಗೆ', 'ಗೋದಾಮು',
+      // Malayalam
+      'മാർക്കറ്റ്', 'വില', 'വിൽപ്പന', 'നിരക്ക്', 'വാങ്ങുന്നയാൾ', 'ഗതാഗതം', 'ഗോഡൗൺ'
     ]
   };
 
-  for (const [category, keywords] of Object.entries(categories)) {
-    if (keywords.some(keyword => lowerText.includes(keyword))) {
-      return category;
+  let bestCategory = 'Other';
+  let maxScore = 0;
+
+  // Score each category based on keyword matches
+  for (const [category, keywords] of Object.entries(categoryKeywords)) {
+    let score = 0;
+    for (const keyword of keywords) {
+      if (lowerText.includes(keyword.toLowerCase())) {
+        score += 1;
+      }
+    }
+    if (score > maxScore) {
+      maxScore = score;
+      bestCategory = category;
     }
   }
 
-  return 'Other';
+  return bestCategory;
 };
